@@ -10,7 +10,8 @@ debugpermutation = False
 
 # === Ascon encryption and decryption ===
 
-def ascon_encrypt(key, nonce, associateddata, plaintext, variant="Ascon-128"): 
+
+def ascon_encrypt(key, nonce, associateddata, plaintext, variant="Ascon-128"):
     """
     Ascon encryption.
     key: a bytes object of size 16 (for 128-bit security)
@@ -47,10 +48,10 @@ def ascon_decrypt(key, nonce, associateddata, ciphertext, variant="Ascon-128"):
     assert(len(key) == 16 and len(nonce) == 16)
     assert(len(ciphertext) >= len(key))
     S = [0, 0, 0, 0, 0]
-    k = len(key) * 8 # bits
-    a = 12 # rounds
+    k = len(key) * 8  # bits
+    a = 12  # rounds
     b = 6 if variant == "Ascon-128" else 8  # rounds
-    rate = 8 if variant == "Ascon-128" else 16 # bytes
+    rate = 8 if variant == "Ascon-128" else 16  # bytes
 
     ascon_initialize(S, k, rate, a, b, key, nonce)
     ascon_process_associated_data(S, b, rate, associateddata)
@@ -83,13 +84,15 @@ def ascon_initialize(S, k, rate, a, b, key, nonce):
     S[2] = bytes_to_int(zero_key_nonce[8:16])
     S[3] = bytes_to_int(zero_key_nonce[16:24])
     S[4] = bytes_to_int(zero_key_nonce[24:32])
-    if debug: printstate(S, "initial value:")
+    if debug:
+        printstate(S, "initial value:")
 
     ascon_permutation(S, a)
 
     S[3] ^= bytes_to_int(zero_key[0:8])
     S[4] ^= bytes_to_int(zero_key[8:16])
-    if debug: printstate(S, "initialization:")
+    if debug:
+        printstate(S, "initialization:")
 
 
 def ascon_process_associated_data(S, b, rate, associateddata):
@@ -114,7 +117,8 @@ def ascon_process_associated_data(S, b, rate, associateddata):
             ascon_permutation(S, b)
 
     S[4] ^= 1
-    if debug: printstate(S, "process associated data:")
+    if debug:
+        printstate(S, "process associated data:")
 
 
 def ascon_process_plaintext(S, b, rate, plaintext):
@@ -151,8 +155,10 @@ def ascon_process_plaintext(S, b, rate, plaintext):
     elif rate == 16:
         S[0] ^= bytes_to_int(p_padded[block:block+8])
         S[1] ^= bytes_to_int(p_padded[block+8:block+16])
-        ciphertext += (int_to_bytes(S[0], 8)[:min(8,p_lastlen)] + int_to_bytes(S[1], 8)[:max(0,p_lastlen-8)])
-    if debug: printstate(S, "process plaintext:")
+        ciphertext += (int_to_bytes(S[0], 8)[:min(8, p_lastlen)] +
+                       int_to_bytes(S[1], 8)[:max(0, p_lastlen-8)])
+    if debug:
+        printstate(S, "process plaintext:")
     return ciphertext
 
 
@@ -176,8 +182,10 @@ def ascon_process_ciphertext(S, b, rate, ciphertext):
             plaintext += int_to_bytes(S[0] ^ Ci, 8)
             S[0] = Ci
         elif rate == 16:
-            Ci = (bytes_to_int(c_padded[block:block+8]), bytes_to_int(c_padded[block+8:block+16]))
-            plaintext += (int_to_bytes(S[0] ^ Ci[0], 8) + int_to_bytes(S[1] ^ Ci[1], 8))
+            Ci = (bytes_to_int(c_padded[block:block+8]),
+                  bytes_to_int(c_padded[block+8:block+16]))
+            plaintext += (int_to_bytes(S[0] ^ Ci[0],
+                                       8) + int_to_bytes(S[1] ^ Ci[1], 8))
             S[0] = Ci[0]
             S[1] = Ci[1]
 
@@ -195,14 +203,17 @@ def ascon_process_ciphertext(S, b, rate, ciphertext):
         c_lastlen_word = c_lastlen % 8
         c_padding1 = (0x80 << (8-c_lastlen_word-1)*8)
         c_mask = (0xFFFFFFFFFFFFFFFF >> (c_lastlen_word*8))
-        Ci = (bytes_to_int(c_padded[block:block+8]), bytes_to_int(c_padded[block+8:block+16]))
-        plaintext += (int_to_bytes(S[0] ^ Ci[0], 8) + int_to_bytes(S[1] ^ Ci[1], 8))[:c_lastlen]
+        Ci = (bytes_to_int(c_padded[block:block+8]),
+              bytes_to_int(c_padded[block+8:block+16]))
+        plaintext += (int_to_bytes(S[0] ^ Ci[0], 8) +
+                      int_to_bytes(S[1] ^ Ci[1], 8))[:c_lastlen]
         if c_lastlen < 8:
             S[0] = Ci[0] ^ (S[0] & c_mask) ^ c_padding1
         else:
             S[0] = Ci[0]
             S[1] = Ci[1] ^ (S[1] & c_mask) ^ c_padding1
-    if debug: printstate(S, "process ciphertext:")
+    if debug:
+        printstate(S, "process ciphertext:")
     return plaintext
 
 
@@ -224,7 +235,8 @@ def ascon_finalize(S, rate, a, key):
     S[3] ^= bytes_to_int(key[0:8])
     S[4] ^= bytes_to_int(key[8:16])
     tag = int_to_bytes(S[3], 8) + int_to_bytes(S[4], 8)
-    if debug: printstate(S, "finalization:")
+    if debug:
+        printstate(S, "finalization:")
     return tag
 
 
@@ -236,30 +248,34 @@ def ascon_permutation(S, rounds=1):
     returns nothing, updates S
     """
     assert(rounds <= 12)
-    if debugpermutation: printwords(S, "permutation input:")
+    if debugpermutation:
+        printwords(S, "permutation input:")
     for r in range(12-rounds, 12):
         # --- add round constants ---
         S[2] ^= (0xf0 - r*0x10 + r*0x1)
-        if debugpermutation: printwords(S, "round constant addition:")
+        if debugpermutation:
+            printwords(S, "round constant addition:")
         # --- substitution layer ---
         S[0] ^= S[4]
         S[4] ^= S[3]
         S[2] ^= S[1]
-        T = [(S[i] ^ 0xFFFFFFFFFFFFFFFF) & S[(i+1)%5] for i in range(5)]
+        T = [(S[i] ^ 0xFFFFFFFFFFFFFFFF) & S[(i+1) % 5] for i in range(5)]
         for i in range(5):
-            S[i] ^= T[(i+1)%5]
+            S[i] ^= T[(i+1) % 5]
         S[1] ^= S[0]
         S[0] ^= S[4]
         S[3] ^= S[2]
         S[2] ^= 0XFFFFFFFFFFFFFFFF
-        if debugpermutation: printwords(S, "substitution layer:")
+        if debugpermutation:
+            printwords(S, "substitution layer:")
         # --- linear diffusion layer ---
         S[0] ^= rotr(S[0], 19) ^ rotr(S[0], 28)
         S[1] ^= rotr(S[1], 61) ^ rotr(S[1], 39)
         S[2] ^= rotr(S[2],  1) ^ rotr(S[2],  6)
         S[3] ^= rotr(S[3], 10) ^ rotr(S[3], 17)
         S[4] ^= rotr(S[4],  7) ^ rotr(S[4], 41)
-        if debugpermutation: printwords(S, "linear diffusion layer:")
+        if debugpermutation:
+            printwords(S, "linear diffusion layer:")
 
 
 # === helper functions ===
@@ -268,35 +284,44 @@ def get_random_bytes(num):
     import os
     return to_bytes(os.urandom(num))
 
+
 def zero_bytes(n):
     return n * "\x00"
 
-def to_bytes(l): # where l is a list or bytearray or bytes
+
+def to_bytes(l):  # where l is a list or bytearray or bytes
     return bytes(bytearray(l))
+
 
 def bytes_to_int(bytes):
     for i, bi in enumerate(to_bytes(bytes)):
-        #These two print statements were added as part of debugging efforts.  The rest of the code is so far untouched.
+        # These two print statements were added as part of debugging efforts.  The rest of the code is so far untouched.
         print(bi)
         print(str(bi))
     return sum([ord(bi) << ((len(bytes) - 1 - i)*8) for i, bi in enumerate(to_bytes(bytes))])
 
+
 def int_to_bytes(integer, nbytes):
     return to_bytes([(integer >> ((nbytes - 1 - i) * 8)) % 256 for i in range(nbytes)])
+
 
 def rotr(val, r):
     return ((val >> r) ^ (val << (64-r))) % (1 << 64)
 
+
 def bytes_to_hex(b):
     return "".join(x.encode('hex') for x in b)
 
+
 def printstate(S, description=""):
-    print (" " + description)
-    print (" ".join(["{s:016x}".format(s=s) for s in S]))
+    print(" " + description)
+    print(" ".join(["{s:016x}".format(s=s) for s in S]))
+
 
 def printwords(S, description=""):
-    print (" " + description)
-    print ("\n".join(["  x{i}={s:016x}".format(**locals()) for i, s in enumerate(S)]))
+    print(" " + description)
+    print("\n".join(["  x{i}={s:016x}".format(**locals())
+                     for i, s in enumerate(S)]))
 
 
 # === some demo if called directly ===
@@ -304,30 +329,33 @@ def printwords(S, description=""):
 if __name__ == "__main__":
     variant = "Ascon-128"  # or "Ascon-128a"
     keysize = 16
-    print ("=== demo encryption using {variant} ===".format(variant=variant))
+    print("=== demo encryption using {variant} ===".format(variant=variant))
 
     key = zero_bytes(keysize)
     nonce = zero_bytes(keysize)
     #key = get_random_bytes(keysize)
     #nonce = get_random_bytes(keysize)
     associateddata = b"ASCON"
-    plaintext = b"ascon"
+    with open("../to_enc.txt", 'rb') as fo:
+        plaintext = fo.read()
 
     ciphertext = ascon_encrypt(key, nonce, associateddata, plaintext, variant)
-    receivedplaintext = ascon_decrypt(key, nonce, associateddata, ciphertext, variant)
+    receivedplaintext = ascon_decrypt(
+        key, nonce, associateddata, ciphertext, variant)
 
-    if receivedplaintext == None: 
-        print ("verification failed!")
-        
+    if receivedplaintext == None:
+        print("verification failed!")
+
     data = [
-            ("key", key), 
-            ("nonce", nonce), 
-            ("plaintext", plaintext), 
-            ("ass.data", associateddata), 
-            ("ciphertext", ciphertext[:-len(key)]), 
-            ("tag", ciphertext[-len(key):]), 
-            ("received", receivedplaintext), 
-           ]
-    maxlen = max([len(text) for (text, val) in data])
-    for text, val in data:
-        print ("{text}:{align} 0x{val} ({length} bytes)".format(text=text, align=((maxlen - len(text)) * " "), val=bytes_to_hex(val), length=len(val)))
+        ("key", key),
+        ("nonce", nonce),
+        ("plaintext", plaintext),
+        ("ass.data", associateddata),
+        ("ciphertext", ciphertext[:-len(key)]),
+        ("tag", ciphertext[-len(key):]),
+        ("received", receivedplaintext),
+    ]
+    # maxlen = max([len(text) for (text, val) in data])
+    # for text, val in data:
+    #     print("{text}:{align} 0x{val} ({length} bytes)".format(text=text, align=(
+    #         (maxlen - len(text)) * " "), val=bytes_to_hex(val), length=len(val)))
